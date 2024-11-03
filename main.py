@@ -2,7 +2,7 @@ import asyncio
 from aiohttp_socks import ProxyConnector
 from aiohttp import ClientSession, TCPConnector
 from exceptions import *
-from odos_api import XYFinanceClient
+from xy_finance_api import XYFinanceClient
 from web3.exceptions import Web3RPCError
 from helpers import *
 
