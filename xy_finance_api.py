@@ -83,35 +83,28 @@ class XYFinanceClient(W3Client):
 
         return content.get("address")
 
-    async def __get_quite(self, *, amount: float, slippage: float, token_name_from, token_name_to) -> dict:
-        path = "/sor/quote/v2"
+    async def __get_quite(self, *, amount: float, token_name_from, token_name_to) -> dict:
+        path = "/quote"
 
         token_address_from, token_decimals_from, _ = await self.__get_token_info(token_name_from)
         token_address_to, _, _ = await self.__get_token_info(token_name_to)
 
         payload = {
-            "chainId":  await self._get_cain_id(),
-            "compact": True,
-            "userAddr": self._account_address,
-            "slippageLimitPercent": slippage,
-            "inputTokens": [{
-                "tokenAddress": self._to_checksum(token_address_from),
-                "amount": str(self._to_wei(amount=amount, decimals=token_decimals_from))
-            }],
-            "outputTokens": [{
-                "tokenAddress": self._to_checksum(token_address_to),
-                "proportion": 1
-            }]
+            "srcChainId":  await self._get_cain_id(),
+            "destChainId":  await self._get_cain_id(),
+            "fromTokenAddress": token_address_from,
+            "toTokenAddress": token_address_to,
+            "amount": self._to_wei(amount=amount, decimals=token_decimals_from)
         }
 
         content = await self.__send_request(
-            method="POST",
+            method="GET",
             url=f"{self.__base_url}{path}",
             data=payload
         )
 
-        if "pathId" not in content:
-            raise GetQuoteError("Can`t get pathId")
+        if not content.get("isSuccess"):
+            raise GetQuoteError(content.get("msg"))
 
         return content
 
