@@ -1,0 +1,27 @@
+{
+  "arbitrum": {
+    "rpc_url": "https://arbitrum.llamarpc.com",
+    "explorer_url": "https://arbiscan.io/",
+    "tokens": ["eth", "usdt", "usdc"]
+  },
+  "bsc": {
+    "rpc_url": "https://bsc-rpc.publicnode.com",
+    "explorer_url": "https://bscscan.com/",
+    "tokens": ["bnb", "usdt", "usdc", "busd", "cake", "eth", "dai"]
+  },
+  "scroll": {
+    "rpc_url": "https://scroll.drpc.org",
+    "explorer_url": "https://scrollscan.com/",
+    "tokens": ["eth", "usdt", "usdc"]
+  },
+  "optimism": {
+    "rpc_url": "https://optimism.llamarpc.com",
+    "explorer_url": "https://optimistic.etherscan.io/",
+    "tokens": ["eth", "usdt", "usdc"]
+  },
+  "polygon": {
+    "rpc_url": "https://polygon.api.onfinality.io/public",
+    "explorer_url": "https://polygonscan.com/",
+    "tokens": ["matic", "wmatic", "weth", "sol", "usdt", "usdc"]
+  }
+}
