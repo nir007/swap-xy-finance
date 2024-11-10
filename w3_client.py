@@ -5,8 +5,8 @@ from typing import cast
 from loguru import logger
 
 class W3Client:
-    def __init__(self, *, proxy, private, chain):
-        self._chain = chain
+    def __init__(self, *, proxy, private, chain_src):
+        self._chain_src = chain_src
         self._private = private
 
         request_kwargs = {
@@ -15,10 +15,11 @@ class W3Client:
 
         self.__w3 = AsyncWeb3(
             AsyncHTTPProvider(
-                self._chain.get("rpc_url"),
+                self._chain_src.get("rpc_url"),
                 request_kwargs=request_kwargs
             )
         )
+
         self._account_address = self.__w3.to_checksum_address(
             self.__w3.eth.account.from_key(private).address
         )
@@ -28,6 +29,9 @@ class W3Client:
 
     def _to_checksum(self, address):
         return self.__w3.to_checksum_address(address)
+
+    def _get_account_address(self):
+        return self._account_address
 
     async def _get_cain_id(self) -> int:
         return await self.__w3.eth.chain_id
@@ -56,15 +60,29 @@ class W3Client:
             abi=abi
         )
 
-    async def _prepare_tx(self) -> TxParams:
-        base_fee = await self.__w3.eth.gas_price
+    async def _get_nonce(self):
+        return await self.__w3.eth.get_transaction_count(self._account_address)
+
+    async def _get_ges_price(self):
+        return await self.__w3.eth.gas_price
+
+    async def _get_estimate_gas(self, tx: dict):
+        return await self.__w3.eth.estimate_gas(tx)
+
+    async def _get_gas_price(self) -> (int, int):
+        base_fee = await self._get_ges_price()
         max_priority_fee_per_gas = await self.__w3.eth.max_priority_fee
         max_fee_per_gas = int(base_fee + max_priority_fee_per_gas)
+
+        return max_priority_fee_per_gas, max_fee_per_gas
+
+    async def _prepare_tx(self) -> TxParams:
+        max_priority_fee_per_gas, max_fee_per_gas = await self._get_gas_price()
 
         trx: TxParams = {
             "from": self._account_address,
             "chainId": await self.__w3.eth.chain_id,
-            "nonce": await self.__w3.eth.get_transaction_count(self._account_address),
+            "nonce": await self._get_nonce(),
             "maxPriorityFeePerGas": max_priority_fee_per_gas,
             "maxFeePerGas": cast(Wei, max_fee_per_gas),
             "type": HexStr("0x2")
@@ -87,6 +105,6 @@ class W3Client:
         signed_transaction = self.__w3.eth.account.sign_transaction(transaction, self._private)
         return signed_transaction.raw_transaction
 
-    async def _wait_tx_2(self, hex_bytes: HexBytes):
+    async def _wait_tx(self, hex_bytes: HexBytes):
         await self.__w3.eth.wait_for_transaction_receipt(hex_bytes, timeout=80)
-        logger.success(f"Transaction was successful: {self._chain.get('explorer_url')}tx/0x{hex_bytes.hex()}")
+        logger.success(f"Transaction was successful: {self._chain_src.get('explorer_url')}tx/0x{hex_bytes.hex()}")

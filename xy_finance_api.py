@@ -4,16 +4,25 @@ from exceptions import *
 from w3_client import W3Client
 from loguru import logger
 
-class XYFinanceClient(W3Client):
-    def __init__(self, *, session: ClientSession, private, base_url, proxy, chain: dict):
-        super().__init__(
-            proxy=proxy,
-            private=private,
-            chain=chain
-        )
+XY_FINANCE_NATIVE_KEY = "Native"
 
+class XYFinanceClient:
+    def __init__(
+            self,
+            *,
+            w3: W3Client = None,
+            session: ClientSession,
+            aggregator_base_url,
+            open_api_base_url,
+    ):
+        self.__w3 = w3
+        self.__chain_tokens: list | None = None
         self.__session = session
-        self.__base_url = base_url
+        self.__aggregator_base_url = aggregator_base_url
+        self.__open_api_base_url = open_api_base_url
+
+    def set_w3(self, w3: W3Client):
+        self.__w3 = w3
 
     async def __send_request(self, *, url: str, method: str = "GET", data: dict = None):
         logger.info(f"Sent request to {method}: {url}")
@@ -36,27 +45,35 @@ class XYFinanceClient(W3Client):
 
             return content
 
-    async def __get_token_info(self, token_name: str) -> (str, int, bool):
-        chain_id = await self._get_cain_id()
+    async def get_native_token_info(self, chain_id) -> dict:
+        path = f"/recommendedTokens?chainId={chain_id}"
 
-        path = f"/info/tokens/{chain_id}"
+        content = await self.__send_request(method="GET", url=f"{self.__open_api_base_url}{path}")
 
-        content = await self.__send_request(
-            method="GET",
-            url=f"{self.__base_url}{path}"
-        )
+        if not content.get("isSuccess"):
+            raise RuntimeError("Can`t get supported tokens")
 
-        tokens: dict = content.get("tokenMap")
+        tokens: list = content.get("recommendedTokens")
 
-        for addr in tokens.keys():
-            if str(tokens.get(addr).get("symbol")).lower() == token_name:
-                token_address = addr
-                token_decimal = int(tokens.get(addr).get("decimals"))
-                is_native = tokens.get(addr).get("protocolId") == "native"
+        for token in tokens:
+            if XY_FINANCE_NATIVE_KEY in token.get("types"):
+                return token
 
-                return token_address, token_decimal, is_native
+        raise NativeTokenNotFound(chain_id)
 
-        raise TokenNotFound(token_name)
+    async def get_supported_chains(self) -> dict:
+        path = "/supportedChains"
+        content = await self.__send_request(method="GET", url=f"{self.__aggregator_base_url}{path}")
+
+        if not content.get("success"):
+            raise RuntimeError("Can`t get supported chains")
+
+        chains: dict = {}
+        supported_chains: list = content.get("supportedChains")
+        for el in supported_chains:
+            chains[el.get("name")] = el.get("chainId")
+
+        return chains
 
     async def __get_contract_info(self) -> (str, dict):
         chain_id = await self._get_cain_id()
@@ -65,41 +82,58 @@ class XYFinanceClient(W3Client):
 
         content = await self.__send_request(
             method="GET",
-            url=f"{self.__base_url}{path}"
+            url=f"{self.__aggregator_base_url}{path}"
         )
 
         return content.get("routerAddress"), content.get("erc20Abi").get("abi")
 
-    async def __get_router_address(self) -> str:
-        path = f"/info/router/v2/{await self._get_cain_id()}"
-
-        content = await self.__send_request(
-            method="GET",
-            url=f"{self.__base_url}{path}"
-        )
-
-        if "address" not in content:
-            raise RuntimeError("Can`t get router info")
-
-        return content.get("address")
-
-    async def __get_quite(self, *, amount: float, token_name_from, token_name_to) -> dict:
+    async def __get_quite(self, *, amount: float, chain_src_id: int, chain_target: int) -> dict:
         path = "/quote"
 
-        token_address_from, token_decimals_from, _ = await self.__get_token_info(token_name_from)
-        token_address_to, _, _ = await self.__get_token_info(token_name_to)
+        token_address_from, token_decimals_from, _ = await self.__get_native_token_info(chain_src_id)
+        token_address_to, _, _ = await self.__get_native_token_info(chain_target)
 
         payload = {
             "srcChainId":  await self._get_cain_id(),
             "destChainId":  await self._get_cain_id(),
             "fromTokenAddress": token_address_from,
             "toTokenAddress": token_address_to,
-            "amount": self._to_wei(amount=amount, decimals=token_decimals_from)
+            "amount": self._to_wei(amount=amount, decimals=token_decimals_from),
         }
 
         content = await self.__send_request(
             method="GET",
-            url=f"{self.__base_url}{path}",
+            url=f"{self.__agg_base_url}{path}",
+            data=payload
+        )
+
+        if not content.get("success"):
+            raise GetQuoteError("Can`t get quote")
+
+        return content
+
+    async def __get_swap(self, quite: dict) -> dict:
+        path = "/swap"
+
+        routes: list = quite.get("routes")
+        if len(routes) == 0:
+            raise GetQuoteError("No one routes found")
+
+        route = routes[0]
+
+        payload = {
+            "srcChainId":  route.get("srcChainId"),
+            "destChainId":  route.get("srcChainId"),
+            "fromTokenAddress": route.get("srcQuoteTokenAddress"),
+            "toTokenAddress": route.get("dstQuoteTokenAddress"),
+            "amount": route.get("srcQuoteTokenAmount"),
+            "slippage": route.get("slippage"),
+            "receiveAddress": self._get_account_address()
+        }
+
+        content = await self.__send_request(
+            method="GET",
+            url=f"{self.__aggregator_base_url}{path}",
             data=payload
         )
 
@@ -108,44 +142,53 @@ class XYFinanceClient(W3Client):
 
         return content
 
-    async def __asemble(self, *, quite: dict):
-        path = "/sor/assemble"
+    async def __build_tx(self, quite: dict):
+        path = "/buildTx"
+
+        routes: list = quite.get("routes")
+        if len(routes) == 0:
+            raise GetQuoteError("No one routes found")
+
+        route = routes[0]
 
         payload = {
-            "pathId":  quite.get("pathId"),
-            "simulate": True,
-            "userAddr": self._account_address
+            "srcChainId":  route.get("srcChainId"),
+            "dstChainId":  route.get("srcChainId"),
+            "srcQuoteTokenAddress": route.get("srcQuoteTokenAddress"),
+            "dstQuoteTokenAddress": route.get("dstQuoteTokenAddress"),
+            "swapProviders": route.get("srcSwapDescription").get("provider"),
+            "srcQuoteTokenAmount": route.get("srcQuoteTokenAmount"),
+            "receiver": self._get_account_address(),
+            "slippage": route.get("slippage"),
         }
 
         content = await self.__send_request(
-            method="POST",
-            url=f"{self.__base_url}{path}",
+            method="GET",
+            url=f"{self.__agg_base_url}{path}",
             data=payload
         )
 
-        if "simulation" in content and content.get("simulation") is not None:
-            simulation = content.get("simulation")
-            is_success = simulation.get("isSuccess")
-
-            if not is_success and "simulationError" in simulation:
-                raise AssembleError(simulation["simulationError"].get("errorMessage"))
-
-        if "transaction" not in content:
-            raise AssembleError("Can`t find transaction info in response")
+        if not content.get("success"):
+            raise BuildTxError(content.get("errorMsg"))
 
         return content
 
-    async def swap(self, *, amount: float, slippage: float, token_name_from: str, token_name_to: str):
+    async def swap(
+        self,
+        *,
+        amount: float,
+        slippage: float,
+        chain_src: dict,
+        chain_target: dict
+    ):
         quite = await self.__get_quite(
             amount=amount,
             slippage=slippage,
-            token_name_from=token_name_from,
-            token_name_to=token_name_to,
         )
 
-        token_address, token_decimals, is_native = await self.__get_token_info(token_name_from)
+        token_address, token_decimals, native = await self.__get_native_token_info(token_name_from)
 
-        if not is_native:
+        if not native:
             router_address, abi = await self.__get_contract_info()
 
             tx_hash = await self._approve(
@@ -158,18 +201,17 @@ class XYFinanceClient(W3Client):
             logger.info(f"Approving swap {amount} {token_name_from.upper()}")
             logger.info(f"Approve transaction sent: {tx_hash.hex()}")
 
-            await self._wait_tx_2(hex_bytes=tx_hash)
+            await self._wait_tx(hex_bytes=tx_hash)
 
-        assembled_transaction = await self.__asemble(quite=quite)
+        tx_info_swap = await self.__get_swap(quite)
 
-        transaction = assembled_transaction["transaction"]
-        transaction["value"] = int(transaction["value"])
+        trx = tx_info_swap.get("tx") | await self._prepare_tx() | {
+            "gas": tx_info_swap.get("estimatedGas")
+        }
 
-        signed_transaction = await self._sign(transaction)
-
-        tx_hash = await self._send_raw_transaction(signed_transaction)
+        tx_hash = await self._send_raw_transaction(await self._sign(trx))
 
         logger.info(f"Swap: {amount:.7f} {token_name_from.upper()} to {token_name_to.upper()}")
         logger.info(f"Transaction sent: {tx_hash.hex()}")
 
-        await self._wait_tx_2(hex_bytes=tx_hash)
+        await self._wait_tx(hex_bytes=tx_hash)

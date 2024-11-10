@@ -1,0 +1,81 @@
+{
+  "success": true,
+  "route": {
+    "srcQuoteTokenAddress": "text",
+    "srcQuoteTokenAmount": "text",
+    "dstQuoteTokenAddress": "text",
+    "slippage": 0,
+    "srcSwapDescription": {
+      "chainId": "text",
+      "provider": "text",
+      "srcTokenAddress": "text",
+      "dstTokenAddress": "text",
+      "srcTokenAmount": "text",
+      "dstTokenAmount": "text",
+      "dexNames": [
+        "text"
+      ]
+    },
+    "bridgeDescription": {
+      "provider": "text",
+      "srcBridgeTokenAddress": "text",
+      "dstBridgeTokenAddress": "text",
+      "srcBridgeTokenAmount": "text",
+      "dstBridgeTokenAmount": "text",
+      "bridgeContractAddress": "text",
+      "bridgeFeeAmount": "text",
+      "bridgeFeeToken": {
+        "address": "text",
+        "symbol": "text"
+      },
+      "srcBridgeToken": {
+        "address": "text",
+        "symbol": "text"
+      },
+      "dstBridgeToken": {
+        "address": "text",
+        "symbol": "text"
+      }
+    },
+    "dstSwapDescription": {
+      "chainId": "text",
+      "provider": "text",
+      "srcTokenAddress": "text",
+      "dstTokenAddress": "text",
+      "srcTokenAmount": "text",
+      "dstTokenAmount": "text",
+      "dexNames": [
+        "text"
+      ]
+    },
+    "dstQuoteTokenAmount": "text",
+    "minReceiveAmount": "text",
+    "affiliateFeeAmount": "text",
+    "withholdingFeeAmount": "0",
+    "routeType": "xswapper_single_chain",
+    "tags": [
+      "text"
+    ],
+    "contractAddress": "text",
+    "withholdingFeeToken": {
+      "address": "text",
+      "symbol": "text"
+    },
+    "srcQuoteToken": {
+      "address": "text",
+      "symbol": "text"
+    },
+    "dstQuoteToken": {
+      "address": "text",
+      "symbol": "text"
+    },
+    "srcQuoteTokenUsdValue": "0",
+    "dstQuoteTokenUsdValue": "0",
+    "estimatedGas": "0"
+  },
+  "tx": {
+    "to": "text",
+    "data": "text",
+    "value": "text"
+  }
+}

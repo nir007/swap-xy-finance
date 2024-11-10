@@ -10,7 +10,7 @@
     "tokens": ["bnb", "usdt", "usdc", "busd", "cake", "eth", "dai"]
   },
   "scroll": {
-    "rpc_url": "https://scroll.drpc.org",
+    "rpc_url": "https://endpoints.omniatech.io/v1/scroll/mainnet/public",
     "explorer_url": "https://scrollscan.com/",
     "tokens": ["eth", "usdt", "usdc"]
   },
@@ -22,6 +22,6 @@
   "polygon": {
     "rpc_url": "https://polygon.api.onfinality.io/public",
     "explorer_url": "https://polygonscan.com/",
-    "tokens": ["matic", "wmatic", "weth", "sol", "usdt", "usdc"]
+    "tokens": ["pol", "xy", "weth", "sol", "usdt", "usdc"]
   }
 }
