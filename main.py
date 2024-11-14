@@ -1,7 +1,8 @@
 import asyncio
-from lib2to3.btm_utils import tokens
-
+import json
+import sys
 import nest_asyncio
+import questionary
 from aiohttp_socks import ProxyConnector
 from aiohttp import ClientSession, TCPConnector
 from exceptions import *
@@ -20,15 +21,8 @@ async def main():
     )
 
     try:
-        api = XYFinanceClient(
-            session=session,
-            aggregator_base_url=agg_base_url,
-            open_api_base_url=open_api_base_url
-        )
-
-        chains = await api.get_supported_chains()
-
-        api.set_w3(W3Client(proxy=proxy, private=private, chain_src={}))
+        with open("chains.json", "r") as file:
+            chains: dict = json.load(file)
 
         chain_name_src = questionary.select(
             "Select source chain: ",
@@ -40,8 +34,18 @@ async def main():
             choices=list(chains.keys())
         ).ask()
 
-        native_token_src = await api.get_native_token_info(chains.get(chain_name_src))
-        native_token_target = await api.get_native_token_info(chains.get(chain_name_target))
+        api = XYFinanceClient(
+            w3=W3Client(proxy=proxy, private=private, chain_src=chains.get(chain_name_src)),
+            session=session,
+            aggregator_base_url=agg_base_url,
+            open_api_base_url=open_api_base_url
+        )
+
+        native_token_src = await api.get_native_token_info(chains.get(chain_name_src).get("id"))
+        native_token_target = native_token_src
+
+        if chain_name_src != chain_name_target:
+            native_token_target = await api.get_native_token_info(chains.get(chain_name_target).get("id"))
 
         amount = 0
         while not amount:
@@ -71,8 +75,6 @@ async def main():
             sys.exit()
 
         await api.swap(
-            chain_src=chains.get(chain_name_src),
-            chain_target=chains.get(chain_name_target),
             token_src=native_token_src,
             token_target=native_token_target,
             amount=float(amount),
@@ -87,6 +89,8 @@ async def main():
         logger.error(f"BuildTx: {e}")
     except Web3RPCError as e:
         logger.error(f"RPC error: {e}")
+    except InsufficientError as e:
+        logger.error(f"Balance error: {e}")
     except Exception as e:
         logger.error(f"Something went wrong: {e}")
     finally:

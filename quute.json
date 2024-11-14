@@ -1,0 +1,77 @@
+{
+  'srcSwapDescription': None,
+  'bridgeDescription': {
+    'provider': 'yBridge',
+    'srcChainId': 534352,
+    'srcBridgeTokenAddress': '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE',
+    'dstChainId': 10,
+    'dstBridgeTokenAddress': '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE',
+    'srcBridgeTokenAmount': '150000000000000',
+    'dstBridgeTokenAmount': '146728311526034',
+    'bridgeContractAddress': '0x778C974568e376146dbC64fF12aD55B2d1c4133f',
+    'bridgeFeeAmount': '3271688473966',
+    'bridgeFeeToken': {
+      'chainId': 534352,
+      'address': '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE',
+      'decimals': 18,
+      'symbol': 'ETH'
+    },
+    'srcBridgeToken': {
+      'chainId': 534352,
+      'address': '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE',
+      'decimals': 18,
+      'symbol': 'ETH'
+    },
+    'dstBridgeToken': {
+      'chainId': 10,
+      'address': '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE',
+      'decimals': 18,
+      'symbol': 'ETH'
+    }
+  },
+  'dstSwapDescription': None,
+  'dstQuoteTokenAmount': '146728311526034',
+  'srcChainId': 534352,
+  'srcQuoteTokenAddress': '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE',
+  'srcQuoteTokenAmount': '150000000000000',
+  'dstChainId': 10,
+  'dstQuoteTokenAddress': '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE',
+  'slippage': 1.0,
+  'affiliateFeeAmount': '0',
+  'routeType': 'xswapper_cross_chain',
+  'tags': [],
+  'minReceiveAmount': '145261028410773',
+  'withholdingFeeAmount': '0',
+  'withholdingFee': {
+    'aggregatorProtocolFeeAmount': '0',
+    'bridgeProviderFeeAmount': '0',
+    'dstExecutionFeeAmount': '0'
+  },
+  'contractAddress': '0x778C974568e376146dbC64fF12aD55B2d1c4133f',
+  'withholdingFeeToken': {
+    'chainId': 534352,
+    'address': '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE',
+    'decimals': 18,
+    'symbol': 'ETH'
+  },
+  'srcQuoteToken': {
+    'chainId': 534352,
+    'address': '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE',
+    'decimals': 18,
+    'symbol': 'ETH'
+  },
+  'dstQuoteToken': {
+    'chainId': 10,
+    'address': '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE',
+    'decimals': 18,
+    'symbol': 'ETH'
+  },
+  'srcQuoteTokenUsdValue': '0.4669695',
+  'dstQuoteTokenUsdValue': '0.45678430846104222642',
+  'transactionCounts': 2,
+  'srcNativeTokenUsdPrice': '3113.13',
+  'estimatedGas': '240000',
+  'estimatedGasFeeAmount': '28801758000000',
+  'estimatedTransferTime': 180,
+  'id': '68ce5895-bdbc-56db-8681-9d7f60c941a2'
+}

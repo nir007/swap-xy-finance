@@ -9,3 +9,7 @@ class BuildTxError(Exception):
 class NativeTokenNotFound(Exception):
     def __init__(self, message):
         super().__init__(f"Can`t find native token in chain id : {message}")
+
+class InsufficientError(Exception):
+    def __init__(self, message):
+        super().__init__(f"Insufficient balance. {message}")

@@ -1,12 +1,8 @@
 import os
-import json
-import sys
 
-import questionary
 from loguru import logger
 from dotenv import load_dotenv
 
-CHAINS_FILE_NAME = "chains.json"
 README_URL = "https://github.com/nir007/swap-xy-finance/blob/main/Readme.md"
 
 def is_number(val: str) -> bool:

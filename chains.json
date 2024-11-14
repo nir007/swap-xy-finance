@@ -2,26 +2,26 @@
   "arbitrum": {
     "rpc_url": "https://arbitrum.llamarpc.com",
     "explorer_url": "https://arbiscan.io/",
-    "tokens": ["eth", "usdt", "usdc"]
+    "id": 42161
   },
   "bsc": {
     "rpc_url": "https://bsc-rpc.publicnode.com",
     "explorer_url": "https://bscscan.com/",
-    "tokens": ["bnb", "usdt", "usdc", "busd", "cake", "eth", "dai"]
+    "id": 56
   },
-  "scroll": {
+    "scroll": {
     "rpc_url": "https://endpoints.omniatech.io/v1/scroll/mainnet/public",
     "explorer_url": "https://scrollscan.com/",
-    "tokens": ["eth", "usdt", "usdc"]
+    "id": 534352
   },
   "optimism": {
     "rpc_url": "https://optimism.llamarpc.com",
     "explorer_url": "https://optimistic.etherscan.io/",
-    "tokens": ["eth", "usdt", "usdc"]
+    "id": 10
   },
   "polygon": {
-    "rpc_url": "https://polygon.api.onfinality.io/public",
+    "rpc_url": "https://polygon.meowrpc.com",
     "explorer_url": "https://polygonscan.com/",
-    "tokens": ["pol", "xy", "weth", "sol", "usdt", "usdc"]
+    "id": 137
   }
 }
