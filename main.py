@@ -29,9 +29,12 @@ async def main():
             choices=list(chains.keys())
         ).ask()
 
+        new_list = list(chains.keys())
+        new_list.remove(chain_name_src)
+
         chain_name_target = questionary.select(
             "Select target chain: ",
-            choices=list(chains.keys())
+            choices=new_list
         ).ask()
 
         api = XYFinanceClient(
@@ -46,6 +49,11 @@ async def main():
 
         if chain_name_src != chain_name_target:
             native_token_target = await api.get_native_token_info(chains.get(chain_name_target).get("id"))
+
+        balance = await api.get_balance()
+        logger.info(
+            f"Balance: {(balance / (10 ** native_token_src.get('decimals'))):.7f} {native_token_src.get('name').upper()}"
+        )
 
         amount = 0
         while not amount:

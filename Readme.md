@@ -1,4 +1,4 @@
-# Swap eth, bnb, matic, usdt, usdc by xy-finance API 
+# Bridge native tokens by xy-finance API 
 
 ### Support chains:
  - arbitrum
@@ -12,5 +12,6 @@
 ````
 PROXY=login:passwod@IP:PORT
 PRIVATE=your_wallet_private_key
-BASE_URL=https://open-api.xy.finance/v1
+AGGREGATOR_API_BASE_URL=https://aggregator-api.xy.finance/v1
+OPEN_API_BASE_URL=https://open-api.xy.finance/v1
 ````

@@ -1,6 +1,4 @@
 import http.client
-from itertools import chain
-
 from aiohttp import ClientSession
 from exceptions import *
 from w3_client import W3Client
@@ -12,7 +10,7 @@ class XYFinanceClient:
     def __init__(
             self,
             *,
-            w3: W3Client = None,
+            w3: W3Client,
             session: ClientSession,
             aggregator_base_url,
             open_api_base_url,
@@ -65,18 +63,6 @@ class XYFinanceClient:
 
         raise NativeTokenNotFound(chain_id)
 
-    async def __get_contract_info(self) -> (str, dict):
-        chain_id = await self.__w3.get_cain_id()
-
-        path = f"/info/contract-info/v2/{chain_id}"
-
-        content = await self.__send_request(
-            method="GET",
-            url=f"{self.__aggregator_base_url}{path}"
-        )
-
-        return content.get("routerAddress"), content.get("erc20Abi").get("abi")
-
     async def __get_quite(self, *, amount: float, slippage: float, token_src: dict, token_target: dict) -> dict:
         path = "/quote"
 
@@ -105,13 +91,22 @@ class XYFinanceClient:
 
         payload = {
             "srcChainId":  quite.get("srcChainId"),
-            "dstChainId":  quite.get("srcChainId"),
+            "dstChainId":  quite.get("dstChainId"),
             "srcQuoteTokenAddress": quite.get("srcQuoteTokenAddress"),
             "dstQuoteTokenAddress": quite.get("dstQuoteTokenAddress"),
+            "srcBridgeTokenAddress": quite.get("bridgeDescription").get("srcBridgeTokenAddress"),
+            "dstBridgeTokenAddress": quite.get("bridgeDescription").get("dstBridgeTokenAddress"),
             "srcQuoteTokenAmount": quite.get("srcQuoteTokenAmount"),
             "receiver": self.__w3.get_account_address(),
             "slippage": quite.get("slippage"),
+            "bridgeProvider": quite.get("bridgeDescription").get("provider")
         }
+
+        if quite.get("srcSwapDescription") and quite.get("srcSwapDescription") is not None:
+            payload = payload | {
+                "srcSwapProvider": quite.get("srcSwapDescription").get("provider"),
+                "dstSwapProvider": quite.get("srcSwapDescription").get("provider"),
+            }
 
         content = await self.__send_request(
             method="GET",
@@ -123,6 +118,9 @@ class XYFinanceClient:
             raise BuildTxError(content.get("errorMsg"))
 
         return content
+
+    async def get_balance(self):
+        return await self.__w3.get_native_token_balance()
 
     async def swap(
         self,
@@ -139,24 +137,28 @@ class XYFinanceClient:
             token_target=token_target
         )
 
+        gas_price = await self.__w3.get_ges_price()
+
         decimals = token_src.get('decimals')
         balance = await self.__w3.get_native_token_balance()
-        will_be_spend = self.__w3.to_wei(amount, decimals) + int(quite.get("estimatedGas"))
+        will_be_spend = self.__w3.to_wei(amount, decimals) + gas_price
 
         if balance < will_be_spend:
             raise InsufficientError(
-                f"Balance: {(balance / (10 ** decimals)):.4f},"
-                f" amount with gas: {(will_be_spend / (10 ** decimals)):.4f}")
+                f"Balance: {(balance / (10 ** decimals)):.7f},"
+                f" amount with gas: {(will_be_spend / (10 ** decimals)):.7f}")
 
-        tx_info_swap = await self.__build_tx(quite)
+        tx_info = await self.__build_tx(quite)
 
-        tx = tx_info_swap.get("tx") | {
-            "gas": quite.get("estimatedGas")
+        estimate_gas = await self.__w3.get_estimate_gas(tx_info["tx"])
+
+        tx = tx_info.get("tx") | await self.__w3.prepare_tx() | {
+            "gas": estimate_gas,
         }
 
-        tx_hash = await self.__w3.send_raw_transaction(
-            await self.__w3.sign(tx)
-        )
+        tx_signed = await self.__w3.sign(tx)
+
+        tx_hash = await self.__w3.send_raw_transaction(tx_signed.raw_transaction)
 
         logger.info(f"Swap: {amount} {token_src.get('name').upper()} to {token_target.get('name').upper()}")
         logger.info(f"Transaction sent: {tx_hash.hex()}")
